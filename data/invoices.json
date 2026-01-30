@@ -1,0 +1,136 @@
+[
+  {
+    "id": "bcf3eb75",
+    "amount": "5000",
+    "payer": "Karl",
+    "payee": "Evens",
+    "purpose": "gift",
+    "date": "2026-01-29",
+    "link": "/invoice/bcf3eb75",
+    "created_at": "2026-01-29T18:57:23.337807",
+    "status": "pending",
+    "payment_date": null
+  },
+  {
+    "id": "f8b48057",
+    "amount": "5000",
+    "payer": "Karl",
+    "payee": "Evens",
+    "purpose": "loan",
+    "date": "2026-01-30",
+    "link": "/invoice/f8b48057",
+    "created_at": "2026-01-29T19:47:31.896126",
+    "status": "paid",
+    "payment_date": "2026-01-29T19:48:54.896866",
+    "payment_method": "zelle",
+    "payment_details": {
+      "zelle_email": "",
+      "zelle_phone": "2393516598",
+      "cashapp_tag": "",
+      "venmo_username": "",
+      "paypal_email": ""
+    },
+    "notes": "",
+    "actual_payment_method": "zelle"
+  },
+  {
+    "id": "ce97842e",
+    "invoice_number": "INV-736187",
+    "amount": 855.0,
+    "subtotal": 855.0,
+    "tax_rate": 0.0,
+    "tax_amount": 0.0,
+    "payer": "Karl",
+    "payer_email": "evensdossou51@gmail.com",
+    "payee": "Evens",
+    "purpose": "nb",
+    "items": [
+      {
+        "description": "food",
+        "quantity": "1",
+        "price": "855"
+      }
+    ],
+    "date": "2026-01-30",
+    "due_date": "2026-03-01",
+    "currency": "USD",
+    "link": "/invoice/ce97842e",
+    "created_at": "2026-01-29T20:23:07.498979",
+    "status": "pending",
+    "payment_date": null,
+    "payment_method": "moncash",
+    "payment_details": {
+      "zelle_email": "",
+      "zelle_phone": "",
+      "cashapp_tag": "",
+      "venmo_username": "",
+      "paypal_email": "",
+      "moncash_phone": "5097154589"
+    },
+    "notes": "",
+    "send_email": true
+  },
+  {
+    "id": "834dcac3",
+    "amount": "5000",
+    "payer": "Karl",
+    "payee": "Evens",
+    "purpose": "loan",
+    "date": "2026-01-30",
+    "payment_method": "zelle",
+    "payment_details": {
+      "zelle_email": "evensdossou51@gmail.com",
+      "zelle_phone": "",
+      "cashapp_tag": "",
+      "venmo_username": "",
+      "paypal_email": "",
+      "moncash_phone": ""
+    },
+    "link": "/invoice/834dcac3",
+    "created_at": "2026-01-29T20:47:08.233263",
+    "status": "pending",
+    "payment_date": null
+  },
+  {
+    "id": "51c5dd52",
+    "amount": "8500",
+    "payer": "Karl",
+    "payee": "Evens",
+    "purpose": "loan",
+    "date": "2026-01-30",
+    "payment_method": "zelle",
+    "payment_details": {
+      "zelle_email": "",
+      "zelle_phone": "2393516598",
+      "cashapp_tag": "",
+      "venmo_username": "",
+      "paypal_email": "",
+      "moncash_phone": ""
+    },
+    "link": "/invoice/51c5dd52",
+    "created_at": "2026-01-29T21:00:56.895397",
+    "status": "pending",
+    "payment_date": null
+  },
+  {
+    "id": "0b20efb1",
+    "amount": "500",
+    "payer": "Karl",
+    "payee": "Evens",
+    "purpose": "jbj",
+    "date": "2026-01-30",
+    "payment_method": "moncash",
+    "payment_details": {
+      "zelle_email": "",
+      "zelle_phone": "",
+      "cashapp_tag": "",
+      "venmo_username": "",
+      "paypal_email": "",
+      "moncash_phone": "5097154589"
+    },
+    "link": "/invoice/0b20efb1",
+    "created_at": "2026-01-29T22:33:19.649205",
+    "status": "pending",
+    "payment_date": null
+  }
+]

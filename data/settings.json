@@ -1,0 +1,15 @@
+{
+  "company_name": "Your Company Name",
+  "company_logo": "",
+  "company_email": "your-email@example.com",
+  "company_phone": "(123) 456-7890",
+  "company_address": "123 Business St, City, Country",
+  "tax_rate": "0.0",
+  "currency": "USD",
+  "email_smtp_server": "smtp.gmail.com",
+  "email_smtp_port": "587",
+  "email_username": "evensdossou51@gmail.com",
+  "email_password": "",
+  "brand_color": "#4f46e5",
+  "secondary_color": "#7c3aed"
+}

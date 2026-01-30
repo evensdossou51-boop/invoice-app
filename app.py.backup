@@ -1,0 +1,501 @@
+from flask import Flask, render_template, request, jsonify, send_file, session, redirect, url_for
+import json
+import os
+import uuid
+import smtplib
+from datetime import datetime
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from reportlab.lib.pagesizes import letter, A4
+from reportlab.pdfgen import canvas
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Table, TableStyle, Spacer
+from reportlab.lib.units import inch
+from io import BytesIO
+import secrets
+
+app = Flask(__name__)
+app.secret_key = secrets.token_hex(16)
+
+# Ensure data directory exists
+if not os.path.exists('data'):
+    os.makedirs('data')
+
+INVOICES_FILE = 'data/invoices.json'
+SETTINGS_FILE = 'data/settings.json'
+
+# Currencies
+CURRENCIES = {
+    'USD': {'symbol': '$', 'name': 'US Dollar', 'rate': 1.0},
+    'DOP': {'symbol': 'RD$', 'name': 'Dominican Peso', 'rate': 56.5},
+    'HTG': {'symbol': 'G', 'name': 'Haitian Gourde', 'rate': 132.5}
+}
+
+# Payment method configurations
+PAYMENT_METHODS = {
+    'zelle': {
+        'name': 'Zelle',
+        'icon': 'fas fa-university',
+        'color': '#6d1e70',
+        'instructions': 'Send payment via Zelle to the email/phone below'
+    },
+    'cashapp': {
+        'name': 'Cash App',
+        'icon': 'fas fa-dollar-sign',
+        'color': '#00d632',
+        'instructions': 'Send payment via Cash App to the $Cashtag below'
+    },
+    'venmo': {
+        'name': 'Venmo',
+        'icon': 'fab fa-vimeo',
+        'color': '#3d95ce',
+        'instructions': 'Send payment via Venmo to the username below'
+    },
+    'paypal': {
+        'name': 'PayPal',
+        'icon': 'fab fa-paypal',
+        'color': '#003087',
+        'instructions': 'Send payment via PayPal to the email below'
+    },
+    'moncash': {
+        'name': 'MonCash',
+        'icon': 'fas fa-wallet',
+        'color': '#ff6600',
+        'instructions': 'Send payment via MonCash to the phone number below'
+    }
+}
+
+# Default settings
+DEFAULT_SETTINGS = {
+    'company_name': 'Your Company Name',
+    'company_logo': '',
+    'company_email': 'your-email@example.com',
+    'company_phone': '(123) 456-7890',
+    'company_address': '123 Business St, City, Country',
+    'tax_rate': 0.0,
+    'currency': 'USD',
+    'email_smtp_server': 'smtp.gmail.com',
+    'email_smtp_port': 587,
+    'email_username': '',
+    'email_password': '',
+    'brand_color': '#4f46e5',
+    'secondary_color': '#7c3aed'
+}
+
+def load_settings():
+    if os.path.exists(SETTINGS_FILE):
+        with open(SETTINGS_FILE, 'r') as f:
+            return {**DEFAULT_SETTINGS, **json.load(f)}
+    return DEFAULT_SETTINGS.copy()
+
+def save_settings(settings):
+    with open(SETTINGS_FILE, 'w') as f:
+        json.dump(settings, f, indent=2)
+
+def load_invoices():
+    if os.path.exists(INVOICES_FILE):
+        with open(INVOICES_FILE, 'r') as f:
+            return json.load(f)
+    return []
+
+def save_invoices(invoices):
+    with open(INVOICES_FILE, 'w') as f:
+        json.dump(invoices, f, indent=2)
+
+def send_email(to_email, subject, body_html, body_text=""):
+    settings = load_settings()
+    
+    if not settings['email_username'] or not settings['email_password']:
+        print("Email credentials not configured")
+        return False
+    
+    try:
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = subject
+        msg['From'] = settings['company_email']
+        msg['To'] = to_email
+        
+        # Attach both HTML and plain text versions
+        part1 = MIMEText(body_text, 'plain')
+        part2 = MIMEText(body_html, 'html')
+        
+        msg.attach(part1)
+        msg.attach(part2)
+        
+        # Send email
+        server = smtplib.SMTP(settings['email_smtp_server'], settings['email_smtp_port'])
+        server.starttls()
+        server.login(settings['email_username'], settings['email_password'])
+        server.send_message(msg)
+        server.quit()
+        
+        print(f"Email sent to {to_email}")
+        return True
+    except Exception as e:
+        print(f"Error sending email: {e}")
+        return False
+
+# Routes
+@app.route('/')
+def index():
+    settings = load_settings()
+    return render_template('index.html', 
+                         payment_methods=PAYMENT_METHODS,
+                         currencies=CURRENCIES,
+                         settings=settings)
+
+@app.route('/dashboard')
+def dashboard():
+    invoices = load_invoices()
+    settings = load_settings()
+    
+    # Calculate dashboard stats
+    total_invoices = len(invoices)
+    pending_invoices = sum(1 for inv in invoices if inv['status'] == 'pending')
+    paid_invoices = sum(1 for inv in invoices if inv['status'] == 'paid')
+    total_amount = sum(float(inv['amount']) for inv in invoices)
+    paid_amount = sum(float(inv['amount']) for inv in invoices if inv['status'] == 'paid')
+    
+    return render_template('dashboard.html',
+                         invoices=invoices,
+                         stats={
+                             'total': total_invoices,
+                             'pending': pending_invoices,
+                             'paid': paid_invoices,
+                             'total_amount': total_amount,
+                             'paid_amount': paid_amount
+                         },
+                         settings=settings)
+
+@app.route('/settings', methods=['GET', 'POST'])
+def settings_page():
+    settings = load_settings()
+    
+    if request.method == 'POST':
+        form_data = request.form.to_dict()
+        
+        # Handle file upload for logo
+        if 'company_logo' in request.files:
+            file = request.files['company_logo']
+            if file.filename:
+                filename = f"logo_{int(datetime.now().timestamp())}.{file.filename.split('.')[-1]}"
+                file.save(os.path.join('static', 'uploads', filename))
+                form_data['company_logo'] = f"/static/uploads/{filename}"
+        
+        # Update settings
+        settings.update(form_data)
+        save_settings(settings)
+        return redirect(url_for('settings_page'))
+    
+    return render_template('settings.html', settings=settings, currencies=CURRENCIES)
+
+@app.route('/create_invoice', methods=['POST'])
+def create_invoice():
+    data = request.json
+    
+    # Generate unique invoice ID and link
+    invoice_id = str(uuid.uuid4())[:8]
+    invoice_link = f"/invoice/{invoice_id}"
+    
+    settings = load_settings()
+    
+    # Calculate totals
+    items = data.get('items', [])
+    subtotal = sum(float(item.get('price', 0)) * float(item.get('quantity', 1)) for item in items)
+    tax_rate = float(data.get('tax_rate', settings['tax_rate']))
+    tax_amount = subtotal * (tax_rate / 100)
+    total = subtotal + tax_amount
+    
+    # Create invoice object
+    invoice = {
+        'id': invoice_id,
+        'invoice_number': f"INV-{int(datetime.now().timestamp()) % 1000000:06d}",
+        'amount': total,
+        'subtotal': subtotal,
+        'tax_rate': tax_rate,
+        'tax_amount': tax_amount,
+        'payer': data['payer'],
+        'payer_email': data.get('payer_email', ''),
+        'payee': data['payee'],
+        'purpose': data['purpose'],
+        'items': items,
+        'date': data['date'],
+        'due_date': data.get('due_date', data['date']),
+        'currency': data.get('currency', settings['currency']),
+        'link': invoice_link,
+        'created_at': datetime.now().isoformat(),
+        'status': 'pending',
+        'payment_date': None,
+        'payment_method': data.get('payment_method', 'zelle'),
+        'payment_details': {
+            'zelle_email': data.get('zelle_email', ''),
+            'zelle_phone': data.get('zelle_phone', ''),
+            'cashapp_tag': data.get('cashapp_tag', ''),
+            'venmo_username': data.get('venmo_username', ''),
+            'paypal_email': data.get('paypal_email', ''),
+            'moncash_phone': data.get('moncash_phone', '')
+        },
+        'notes': data.get('notes', ''),
+        'send_email': data.get('send_email', False)
+    }
+    
+    # Save to JSON file
+    invoices = load_invoices()
+    invoices.append(invoice)
+    save_invoices(invoices)
+    
+    # Send email notification if requested
+    if invoice['payer_email'] and data.get('send_email'):
+        email_subject = f"Invoice #{invoice['invoice_number']} from {settings['company_name']}"
+        
+        email_html = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+                <div style="background: {settings['brand_color']}; color: white; padding: 20px; border-radius: 5px 5px 0 0;">
+                    <h1 style="margin: 0;">Invoice #{invoice['invoice_number']}</h1>
+                    <p style="margin: 5px 0 0 0;">From: {settings['company_name']}</p>
+                </div>
+                
+                <div style="padding: 20px;">
+                    <p>Dear {invoice['payer']},</p>
+                    
+                    <p>An invoice has been created for you. Here are the details:</p>
+                    
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                        <p><strong>Amount:</strong> {CURRENCIES[invoice['currency']]['symbol']}{invoice['amount']:.2f}</p>
+                        <p><strong>Purpose:</strong> {invoice['purpose']}</p>
+                        <p><strong>Due Date:</strong> {invoice['due_date']}</p>
+                    </div>
+                    
+                    <p>To view and pay the invoice, please click the link below:</p>
+                    
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="{request.host_url.rstrip('/')}{invoice_link}" 
+                           style="background: {settings['brand_color']}; color: white; padding: 12px 30px; 
+                                  text-decoration: none; border-radius: 5px; font-weight: bold;">
+                            View & Pay Invoice
+                        </a>
+                    </div>
+                    
+                    <p>If you have any questions, please contact us at {settings['company_email']}</p>
+                    
+                    <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+                    
+                    <p style="font-size: 12px; color: #666;">
+                        This is an automated message from {settings['company_name']}.<br>
+                        {settings['company_address']}<br>
+                        {settings['company_phone']}
+                    </p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        email_text = f"""
+        Invoice #{invoice['invoice_number']}
+        From: {settings['company_name']}
+        
+        Dear {invoice['payer']},
+        
+        An invoice has been created for you.
+        
+        Amount: {CURRENCIES[invoice['currency']]['symbol']}{invoice['amount']:.2f}
+        Purpose: {invoice['purpose']}
+        Due Date: {invoice['due_date']}
+        
+        To view and pay the invoice, please visit:
+        {request.host_url.rstrip('/')}{invoice_link}
+        
+        If you have any questions, please contact us at {settings['company_email']}
+        
+        --
+        {settings['company_name']}
+        {settings['company_address']}
+        {settings['company_phone']}
+        """
+        
+        send_email(invoice['payer_email'], email_subject, email_html, email_text)
+    
+    return jsonify({
+        'success': True,
+        'invoice_link': invoice_link,
+        'invoice_id': invoice_id,
+        'invoice_number': invoice['invoice_number']
+    })
+
+@app.route('/invoice/<invoice_id>')
+def view_invoice(invoice_id):
+    invoices = load_invoices()
+    settings = load_settings()
+    invoice = next((inv for inv in invoices if inv['id'] == invoice_id), None)
+    
+    if invoice:
+        payment_method = PAYMENT_METHODS.get(invoice.get('payment_method', 'zelle'), {})
+        return render_template('invoice.html', 
+                             invoice=invoice, 
+                             payment_methods=PAYMENT_METHODS,
+                             current_payment_method=payment_method,
+                             settings=settings,
+                             currencies=CURRENCIES)
+    return "Invoice not found", 404
+
+@app.route('/mark_paid/<invoice_id>', methods=['POST'])
+def mark_paid(invoice_id):
+    data = request.json
+    payment_method = data.get('payment_method', '')
+    
+    invoices = load_invoices()
+    
+    for invoice in invoices:
+        if invoice['id'] == invoice_id:
+            invoice['status'] = 'paid'
+            invoice['payment_date'] = datetime.now().isoformat()
+            invoice['actual_payment_method'] = payment_method
+            save_invoices(invoices)
+            return jsonify({'success': True})
+    
+    return jsonify({'success': False}), 404
+
+@app.route('/download_receipt/<invoice_id>')
+def download_receipt(invoice_id):
+    invoices = load_invoices()
+    settings = load_settings()
+    invoice = next((inv for inv in invoices if inv['id'] == invoice_id), None)
+    
+    if not invoice:
+        return "Invoice not found", 404
+    
+    # Create PDF receipt
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4)
+    
+    # Styles
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=24,
+        textColor=colors.HexColor(settings['brand_color']),
+        spaceAfter=30
+    )
+    
+    # Build PDF content
+    content = []
+    
+    # Header
+    content.append(Paragraph(f"Invoice #{invoice['invoice_number']}", title_style))
+    content.append(Paragraph(f"<b>Date:</b> {invoice['date']}", styles["Normal"]))
+    content.append(Paragraph(f"<b>Due Date:</b> {invoice['due_date']}", styles["Normal"]))
+    content.append(Spacer(1, 20))
+    
+    # Company Info
+    content.append(Paragraph(f"<b>From:</b> {settings['company_name']}", styles["Normal"]))
+    if settings['company_address']:
+        content.append(Paragraph(settings['company_address'], styles["Normal"]))
+    if settings['company_phone']:
+        content.append(Paragraph(settings['company_phone'], styles["Normal"]))
+    content.append(Spacer(1, 20))
+    
+    # Payer Info
+    content.append(Paragraph(f"<b>To:</b> {invoice['payer']}", styles["Normal"]))
+    if invoice.get('payer_email'):
+        content.append(Paragraph(invoice['payer_email'], styles["Normal"]))
+    content.append(Spacer(1, 20))
+    
+    # Items Table
+    if invoice.get('items'):
+        table_data = [['Description', 'Quantity', 'Price', 'Total']]
+        for item in invoice['items']:
+            price = float(item.get('price', 0))
+            quantity = float(item.get('quantity', 1))
+            total = price * quantity
+            table_data.append([
+                item.get('description', ''),
+                str(quantity),
+                f"{CURRENCIES[invoice['currency']]['symbol']}{price:.2f}",
+                f"{CURRENCIES[invoice['currency']]['symbol']}{total:.2f}"
+            ])
+        
+        # Add subtotal, tax, and total
+        table_data.append(['', '', 'Subtotal:', f"{CURRENCIES[invoice['currency']]['symbol']}{invoice['subtotal']:.2f}"])
+        table_data.append(['', '', f"Tax ({invoice['tax_rate']}%):", f"{CURRENCIES[invoice['currency']]['symbol']}{invoice['tax_amount']:.2f}"])
+        table_data.append(['', '', '<b>Total:</b>', f"<b>{CURRENCIES[invoice['currency']]['symbol']}{invoice['amount']:.2f}</b>"])
+        
+        table = Table(table_data, colWidths=[3*inch, inch, inch, inch])
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor(settings['brand_color'])),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 12),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -4), colors.white),
+            ('TEXTCOLOR', (0, 1), (-1, -4), colors.black),
+            ('GRID', (0, 0), (-1, -4), 1, colors.grey),
+            ('FONTNAME', (0, -3), (-1, -1), 'Helvetica-Bold'),
+            ('ALIGN', (-2, -3), (-1, -1), 'RIGHT'),
+            ('LINEABOVE', (-2, -3), (-1, -3), 1, colors.black),
+            ('LINEABOVE', (-2, -1), (-1, -1), 2, colors.black),
+        ]))
+        content.append(table)
+    
+    content.append(Spacer(1, 30))
+    
+    # Payment Status
+    status_text = f"<b>Status:</b> {invoice['status'].upper()}"
+    if invoice['status'] == 'paid':
+        status_text += f" on {invoice.get('payment_date', '')[:10]}"
+    content.append(Paragraph(status_text, styles["Normal"]))
+    
+    # Purpose
+    content.append(Paragraph(f"<b>Purpose:</b> {invoice['purpose']}", styles["Normal"]))
+    
+    # Notes
+    if invoice.get('notes'):
+        content.append(Spacer(1, 10))
+        content.append(Paragraph(f"<b>Notes:</b> {invoice['notes']}", styles["Normal"]))
+    
+    doc.build(content)
+    
+    buffer.seek(0)
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name=f"invoice_{invoice['invoice_number']}.pdf",
+        mimetype='application/pdf'
+    )
+
+@app.route('/api/stats')
+def api_stats():
+    invoices = load_invoices()
+    
+    # Monthly stats
+    monthly_data = {}
+    for invoice in invoices:
+        month = invoice['created_at'][:7]  # YYYY-MM
+        if month not in monthly_data:
+            monthly_data[month] = {'count': 0, 'amount': 0}
+        monthly_data[month]['count'] += 1
+        monthly_data[month]['amount'] += float(invoice['amount'])
+    
+    # Payment method stats
+    payment_stats = {}
+    for invoice in invoices:
+        method = invoice.get('actual_payment_method', invoice.get('payment_method', 'unknown'))
+        if method not in payment_stats:
+            payment_stats[method] = 0
+        payment_stats[method] += 1
+    
+    return jsonify({
+        'monthly': monthly_data,
+        'payment_methods': payment_stats
+    })
+
+if __name__ == '__main__':
+    # Create uploads directory
+    if not os.path.exists('static/uploads'):
+        os.makedirs('static/uploads')
+    app.run(debug=True, port=5000)

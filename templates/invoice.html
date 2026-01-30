@@ -1,0 +1,662 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice {{ invoice.id }}</title>
+        <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            line-height: 1.5;
+            padding: 15px;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #6d1e70 0%, #4a148c 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .logo-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+        
+        .logo {
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+            object-fit: contain;
+            background: white;
+            padding: 4px;
+        }
+        
+        .company-name {
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+        }
+        
+        .invoice-card {
+            padding: 20px;
+        }
+        
+        .invoice-header {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .invoice-info h2 {
+            color: #6d1e70;
+            margin-bottom: 8px;
+            font-size: 20px;
+            font-weight: 600;
+        }
+        
+        .status {
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .status.pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status.paid {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+        }
+        
+        .invoice-details {
+            margin: 24px 0;
+        }
+        
+        .detail-row {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        
+        .detail-item {
+            width: 100%;
+        }
+        
+        .detail-item h4 {
+            color: #666;
+            font-size: 13px;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 500;
+        }
+        
+        .detail-item p {
+            color: #333;
+            font-size: 16px;
+            font-weight: 500;
+            line-height: 1.4;
+        }
+        
+        .amount-section {
+            text-align: center;
+            margin: 30px 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 10px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .amount {
+            font-size: 36px;
+            font-weight: 700;
+            color: #6d1e70;
+            margin: 15px 0;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+        
+        /* Payment Method Display */
+        .payment-method-badge {
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 13px;
+            margin-bottom: 16px;
+            color: white;
+            letter-spacing: 0.5px;
+        }
+        
+        /* Payment method colors */
+        .badge-zelle {
+            background: linear-gradient(135deg, #6d1e70 0%, #4a148c 100%);
+        }
+        
+        .badge-cashapp {
+            background: linear-gradient(135deg, #00d632 0%, #00b32a 100%);
+        }
+        
+        .badge-venmo {
+            background: linear-gradient(135deg, #3d95ce 0%, #0088cc 100%);
+        }
+        
+        .badge-paypal {
+            background: linear-gradient(135deg, #003087 0%, #009cde 100%);
+        }
+        
+        .badge-moncash {
+            background: linear-gradient(135deg, #ff0000 0%, #cc0000 100%);
+        }
+        
+        .payment-info-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 24px 0;
+        }
+        
+        .payment-info-card h3 {
+            color: #6d1e70;
+            margin-bottom: 16px;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .payment-detail-item {
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .payment-detail-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        
+        .payment-detail-item strong {
+            color: #555;
+            display: block;
+            margin-bottom: 4px;
+            font-size: 14px;
+        }
+        
+        .payment-detail-item span {
+            color: #6d1e70;
+            font-size: 16px;
+            font-weight: 500;
+            word-break: break-all;
+        }
+        
+        /* Payment Selection */
+        .payment-selection {
+            background: linear-gradient(135deg, #e7f3ff 0%, #d1e7ff 100%);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 24px 0;
+            text-align: center;
+            border: 1px solid #cfe2ff;
+        }
+        
+        .payment-selection h3 {
+            color: #6d1e70;
+            margin-bottom: 12px;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .payment-options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin: 16px 0;
+        }
+        
+        .payment-option {
+            padding: 12px;
+            border: 2px solid;
+            border-radius: 8px;
+            cursor: pointer;
+            background: white;
+            transition: all 0.2s;
+            font-weight: 500;
+            font-size: 14px;
+            text-align: center;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .payment-option:hover {
+            transform: translateY(-2px);
+        }
+        
+        .payment-option.selected {
+            color: white;
+            border: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        /* Option colors */
+        .option-zelle { border-color: #6d1e70; }
+        .option-zelle:hover { background: rgba(109, 30, 112, 0.05); }
+        .option-zelle.selected { background: linear-gradient(135deg, #6d1e70 0%, #4a148c 100%); }
+        
+        .option-cashapp { border-color: #00d632; }
+        .option-cashapp:hover { background: rgba(0, 214, 50, 0.05); }
+        .option-cashapp.selected { background: linear-gradient(135deg, #00d632 0%, #00b32a 100%); }
+        
+        .option-venmo { border-color: #3d95ce; }
+        .option-venmo:hover { background: rgba(61, 149, 206, 0.05); }
+        .option-venmo.selected { background: linear-gradient(135deg, #3d95ce 0%, #0088cc 100%); }
+        
+        .option-paypal { border-color: #003087; }
+        .option-paypal:hover { background: rgba(0, 48, 135, 0.05); }
+        .option-paypal.selected { background: linear-gradient(135deg, #003087 0%, #009cde 100%); }
+        
+        .option-moncash { border-color: #ff0000; }
+        .option-moncash:hover { background: rgba(255, 0, 0, 0.05); }
+        .option-moncash.selected { background: linear-gradient(135deg, #ff0000 0%, #cc0000 100%); }
+        
+        .option-other { border-color: #6c757d; }
+        .option-other:hover { background: rgba(108, 117, 125, 0.05); }
+        .option-other.selected { background: linear-gradient(135deg, #6c757d 0%, #495057 100%); }
+        
+        .payment-option i {
+            font-size: 18px;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #6d1e70 0%, #4a148c 100%);
+            color: white;
+            border: none;
+            padding: 14px 24px;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.2s;
+            min-height: 44px;
+            width: 100%;
+            touch-action: manipulation;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(109, 30, 112, 0.3);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+        }
+        
+        .payment-success {
+            text-align: center;
+            padding: 30px;
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            border-radius: 10px;
+            margin: 24px 0;
+        }
+        
+        .success-icon {
+            font-size: 50px;
+            color: #28a745;
+            margin-bottom: 16px;
+        }
+        
+        .instructions {
+            padding: 20px;
+            background: #f8f9fa;
+            border-top: 1px solid #eee;
+        }
+        
+        .instructions h3 {
+            color: #6d1e70;
+            margin-bottom: 12px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        .instructions ul {
+            margin-left: 20px;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .instructions li {
+            margin-bottom: 8px;
+            padding-left: 4px;
+        }
+        
+        .note {
+            color: #666;
+            font-size: 13px;
+            margin-top: 8px;
+            font-style: italic;
+            line-height: 1.4;
+        }
+        
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 30px;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 16px;
+            color: white;
+            margin-top: 20px;
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        
+        /* Tablet and larger mobile */
+        @media (min-width: 481px) {
+            .payment-options {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .action-buttons {
+                flex-direction: row;
+                justify-content: center;
+            }
+            
+            .btn {
+                width: auto;
+                min-width: 150px;
+            }
+        }
+        
+        /* Desktop */
+        @media (min-width: 768px) {
+            .container {
+                max-width: 600px;
+            }
+            
+            .invoice-header {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: flex-start;
+            }
+            
+            .detail-row {
+                flex-direction: row;
+                gap: 30px;
+            }
+            
+            .payment-options {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .amount {
+                font-size: 48px;
+            }
+        }
+        
+        /* Very small phones */
+        @media (max-width: 360px) {
+            .header {
+                padding: 16px;
+            }
+            
+            .company-name {
+                font-size: 20px;
+            }
+            
+            .payment-options {
+                grid-template-columns: 1fr;
+            }
+            
+            .amount {
+                font-size: 32px;
+            }
+        }
+        
+        /* Better touch targets */
+        button, .payment-option, .btn {
+            touch-action: manipulation;
+        }
+        
+        /* Prevent text selection on buttons */
+        button {
+            user-select: none;
+        }
+        
+        /* Smooth scrolling for mobile */
+        html {
+            scroll-behavior: smooth;
+        }
+    </style>
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📄 Invoice Details</h1>
+            <p>Review and complete your payment</p>
+        </div>
+        
+        <div class="invoice-card">
+            <div class="invoice-header">
+                <div class="invoice-id">
+                    <h3>Invoice #{{ invoice.id }}</h3>
+                    <span class="status {{ invoice.status }}">
+                        {{ invoice.status|upper }}
+                    </span>
+                </div>
+                <div class="invoice-date">
+                    <p><strong>Date:</strong> {{ invoice.date }}</p>
+                    <p><strong>Created:</strong> {{ invoice.created_at[:10] }}</p>
+                </div>
+            </div>
+            
+            <div class="invoice-details">
+                <div class="detail-row">
+                    <div class="detail-item">
+                        <h4>Payer</h4>
+                        <p>{{ invoice.payer }}</p>
+                    </div>
+                    <div class="detail-item">
+                        <h4>Payee</h4>
+                        <p>{{ invoice.payee }}</p>
+                    </div>
+                </div>
+                
+                <div class="detail-item">
+                    <h4>Purpose of Payment</h4>
+                    <p>{{ invoice.purpose }}</p>
+                </div>
+                
+                <div class="amount-section">
+                    <h4>Amount</h4>
+                    <div class="amount">${{ invoice.amount }}</div>
+                </div>
+                
+                <!-- Payment Method Information -->
+                <div class="payment-method-display">
+                    <h4>Payment Information</h4>
+                    <div class="payment-info">
+                        <strong>Preferred Method:</strong> 
+                        <span style="text-transform: uppercase;">{{ invoice.payment_method }}</span>
+                    </div>
+                    
+                    {% if invoice.payment_method == 'zelle' %}
+                        {% if invoice.payment_details.zelle_email %}
+                        <div class="payment-info">
+                            <strong>Zelle Email:</strong> {{ invoice.payment_details.zelle_email }}
+                        </div>
+                        {% endif %}
+                        {% if invoice.payment_details.zelle_phone %}
+                        <div class="payment-info">
+                            <strong>Zelle Phone:</strong> {{ invoice.payment_details.zelle_phone }}
+                        </div>
+                        {% endif %}
+                    {% elif invoice.payment_method == 'cashapp' %}
+                        {% if invoice.payment_details.cashapp_tag %}
+                        <div class="payment-info">
+                            <strong>Cash App Tag:</strong> {{ invoice.payment_details.cashapp_tag }}
+                        </div>
+                        {% endif %}
+                    {% elif invoice.payment_method == 'venmo' %}
+                        {% if invoice.payment_details.venmo_username %}
+                        <div class="payment-info">
+                            <strong>Venmo Username:</strong> {{ invoice.payment_details.venmo_username }}
+                        </div>
+                        {% endif %}
+                    {% elif invoice.payment_method == 'paypal' %}
+                        {% if invoice.payment_details.paypal_email %}
+                        <div class="payment-info">
+                            <strong>PayPal Email:</strong> {{ invoice.payment_details.paypal_email }}
+                        </div>
+                        {% endif %}
+                    {% elif invoice.payment_method == 'moncash' %}
+                        {% if invoice.payment_details.moncash_phone %}
+                        <div class="payment-info">
+                            <strong>MonCash Phone:</strong> {{ invoice.payment_details.moncash_phone }}
+                        </div>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+            
+            {% if invoice.status == 'pending' %}
+            <div class="payment-selection">
+                <h3>Complete Your Payment</h3>
+                <p class="note">Select how you paid and mark the invoice as paid:</p>
+                
+                <select id="paymentMethodUsed" class="payment-select">
+                    <option value="">Select payment method used</option>
+                    <option value="zelle">Zelle</option>
+                    <option value="cashapp">Cash App</option>
+                    <option value="venmo">Venmo</option>
+                    <option value="paypal">PayPal</option>
+                    <option value="moncash">MonCash</option>
+                    <option value="other">Other</option>
+                </select>
+                
+                <button onclick="markAsPaid()" class="btn btn-success">
+                    ✅ Mark as Paid
+                </button>
+                <p class="note">Click this after you have made the payment</p>
+            </div>
+            {% elif invoice.status == 'paid' %}
+            <div class="payment-success">
+                <div style="font-size: 60px; color: #28a745; margin-bottom: 20px;">✅</div>
+                <h3>Payment Completed!</h3>
+                <p>Payment was made via {{ invoice.get('actual_payment_method', invoice.payment_method).upper() }} on {{ invoice.payment_date[:10] }}</p>
+            </div>
+            {% endif %}
+            
+            <div style="text-align: center; margin-top: 30px;">
+                <button onclick="window.print()" class="btn btn-secondary">
+                    🖨️ Print Invoice
+                </button>
+            </div>
+        </div>
+        
+        <div class="instructions">
+            <h3>Instructions:</h3>
+            <ul>
+                <li>Review all invoice details above</li>
+                <li>Use the payment information provided to make payment</li>
+                {% if invoice.status == 'pending' %}
+                <li>After payment, select the method used and click "Mark as Paid"</li>
+                {% endif %}
+                <li>Save or print this page for your records</li>
+                <li>Contact {{ invoice.payee }} if you have questions</li>
+            </ul>
+        </div>
+    </div>
+    
+    <script>
+        async function markAsPaid() {
+            const paymentMethod = document.getElementById('paymentMethodUsed').value;
+            
+            if (!paymentMethod) {
+                alert('Please select the payment method you used.');
+                return;
+            }
+            
+            if (confirm('Confirm that payment has been made via ' + paymentMethod.toUpperCase() + '?')) {
+                try {
+                    const response = await fetch('/mark_paid/{{ invoice.id }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            payment_method: paymentMethod
+                        })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        alert('Invoice marked as paid!');
+                        location.reload();
+                    }
+                } catch (error) {
+                    alert('Error updating invoice. Please try again.');
+                }
+            }
+        }
+        
+        // Auto-focus on payment selection if on mobile
+        if (window.innerWidth < 768) {
+            document.getElementById('paymentMethodUsed').focus();
+        }
+    </script>
+</body>
+</html>
+
+

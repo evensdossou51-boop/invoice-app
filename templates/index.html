@@ -1,0 +1,714 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice Generator</title>
+        <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            line-height: 1.5;
+            padding: 15px;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #6d1e70 0%, #4a148c 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .logo-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+        
+        .logo {
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+            object-fit: contain;
+            background: white;
+            padding: 4px;
+        }
+        
+        .company-name {
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+        }
+        
+        .tagline {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-top: 4px;
+        }
+        
+        .card {
+            padding: 20px;
+        }
+        
+        h2 {
+            color: #6d1e70;
+            margin-bottom: 20px;
+            font-size: 20px;
+            border-bottom: 1px solid #f0f0f0;
+            padding-bottom: 10px;
+            font-weight: 600;
+        }
+        
+        .form-group {
+            margin-bottom: 16px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 6px;
+            color: #555;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        input, textarea, select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            font-family: inherit;
+            transition: all 0.2s;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #6d1e70;
+            box-shadow: 0 0 0 2px rgba(109, 30, 112, 0.1);
+        }
+        
+        /* Mobile-optimized input for better touch */
+        input[type="number"],
+        input[type="text"],
+        input[type="email"],
+        input[type="tel"] {
+            font-size: 16px !important; /* Prevents zoom on iOS */
+            min-height: 44px; /* Minimum touch target size */
+        }
+        
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        /* Payment Methods - Mobile Optimized */
+        .payment-methods {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin: 12px 0;
+        }
+        
+        @media (max-width: 480px) {
+            .payment-methods {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        .payment-method {
+            text-align: center;
+            padding: 12px 6px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            background: white;
+            transition: all 0.2s;
+            min-height: 80px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .payment-method:hover {
+            transform: translateY(-2px);
+        }
+        
+        .payment-method.selected {
+            border: none;
+            color: white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        /* Payment method colors */
+        .payment-method[data-method="zelle"] { border-color: #6d1e70; }
+        .payment-method[data-method="zelle"]:hover { background: rgba(109, 30, 112, 0.05); }
+        .payment-method[data-method="zelle"].selected { background: linear-gradient(135deg, #6d1e70 0%, #4a148c 100%); }
+        
+        .payment-method[data-method="cashapp"] { border-color: #00d632; }
+        .payment-method[data-method="cashapp"]:hover { background: rgba(0, 214, 50, 0.05); }
+        .payment-method[data-method="cashapp"].selected { background: linear-gradient(135deg, #00d632 0%, #00b32a 100%); }
+        
+        .payment-method[data-method="venmo"] { border-color: #3d95ce; }
+        .payment-method[data-method="venmo"]:hover { background: rgba(61, 149, 206, 0.05); }
+        .payment-method[data-method="venmo"].selected { background: linear-gradient(135deg, #3d95ce 0%, #0088cc 100%); }
+        
+        .payment-method[data-method="paypal"] { border-color: #003087; }
+        .payment-method[data-method="paypal"]:hover { background: rgba(0, 48, 135, 0.05); }
+        .payment-method[data-method="paypal"].selected { background: linear-gradient(135deg, #003087 0%, #009cde 100%); }
+        
+        .payment-method[data-method="moncash"] { border-color: #ff0000; }
+        .payment-method[data-method="moncash"]:hover { background: rgba(255, 0, 0, 0.05); }
+        .payment-method[data-method="moncash"].selected { background: linear-gradient(135deg, #ff0000 0%, #cc0000 100%); }
+        
+        .payment-method i {
+            font-size: 22px;
+            margin-bottom: 6px;
+            display: block;
+        }
+        
+        .payment-method span {
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .payment-details {
+            display: none;
+            margin-top: 16px;
+            padding: 16px;
+            border-radius: 8px;
+            animation: fadeIn 0.2s ease;
+            border-left: 3px solid;
+            background: #f8f9fa;
+        }
+        
+        /* Border colors */
+        #zelle-details { border-color: #6d1e70; }
+        #cashapp-details { border-color: #00d632; }
+        #venmo-details { border-color: #3d95ce; }
+        #paypal-details { border-color: #003087; }
+        #moncash-details { border-color: #ff0000; }
+        
+        .payment-details.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .submit-btn {
+            background: linear-gradient(135deg, #6d1e70 0%, #4a148c 100%);
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.2s;
+            margin-top: 20px;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(109, 30, 112, 0.3);
+        }
+        
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+        
+        .success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            border: none;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 24px;
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .success.show {
+            display: block;
+        }
+        
+        .invoice-link-container {
+            display: flex;
+            gap: 8px;
+            margin: 16px 0;
+        }
+        
+        .invoice-link {
+            flex: 1;
+            background: white;
+            border: 1px solid white;
+            padding: 12px;
+            border-radius: 8px;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+            font-size: 13px;
+            color: #333;
+            overflow: auto;
+            white-space: nowrap;
+        }
+        
+        .copy-btn {
+            background: white;
+            color: #28a745;
+            border: none;
+            padding: 12px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            min-width: 60px;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+        
+        .view-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            background: white;
+            color: #6d1e70;
+            padding: 12px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+            margin-top: 10px;
+            min-height: 44px;
+        }
+        
+        .view-btn:hover {
+            background: #f8f9fa;
+        }
+        
+        .instructions {
+            padding: 20px;
+            background: #f8f9fa;
+            border-top: 1px solid #eee;
+        }
+        
+        .instructions h3 {
+            color: #6d1e70;
+            margin-bottom: 12px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        .instructions ol {
+            margin-left: 20px;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .instructions li {
+            margin-bottom: 6px;
+            padding-left: 4px;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 16px;
+            color: white;
+            margin-top: 24px;
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        
+        .color-tag {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 6px;
+            vertical-align: middle;
+        }
+        
+        .zelle-color { background: #6d1e70; }
+        .cashapp-color { background: #00d632; }
+        .venmo-color { background: #3d95ce; }
+        .paypal-color { background: #003087; }
+        .moncash-color { background: #ff0000; }
+        
+        /* Mobile-specific improvements */
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+            
+            .container {
+                border-radius: 10px;
+            }
+            
+            .header {
+                padding: 16px;
+            }
+            
+            .company-name {
+                font-size: 22px;
+            }
+            
+            .tagline {
+                font-size: 13px;
+            }
+            
+            .card {
+                padding: 16px;
+            }
+            
+            h2 {
+                font-size: 18px;
+                margin-bottom: 16px;
+            }
+            
+            input, textarea, select {
+                padding: 10px;
+                font-size: 15px;
+            }
+            
+            .submit-btn {
+                padding: 14px;
+                font-size: 15px;
+            }
+        }
+        
+        /* Prevent zoom on input focus in iOS */
+        @media screen and (max-width: 768px) {
+            input, select, textarea {
+                font-size: 16px !important;
+            }
+        }
+        
+        /* Better touch targets */
+        button, .payment-method, .copy-btn, .view-btn {
+            touch-action: manipulation;
+        }
+        
+        /* Hide color tags on very small screens */
+        @media (max-width: 360px) {
+            .color-tag {
+                display: none;
+            }
+        }
+    </style>
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo-container">
+                <!-- Logo will show if file exists -->
+                <img src="/static/logo.png" alt="Company Logo" class="logo" id="companyLogo">
+                <div>
+                    <div class="company-name">INVOICE PAY</div>
+                    <div class="tagline">Quick & Easy Payments</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>Create New Invoice</h2>
+            
+            <form id="invoiceForm">
+                <div class="form-group">
+                    <label for="amount"><i class="fas fa-dollar-sign"></i> Amount ($)</label>
+                    <input type="number" id="amount" step="0.01" min="0" required placeholder="Enter amount">
+                </div>
+                
+                <div class="form-group">
+                    <label for="payer"><i class="fas fa-user"></i> Payer Name</label>
+                    <input type="text" id="payer" required placeholder="Who is paying?">
+                </div>
+                
+                <div class="form-group">
+                    <label for="payee"><i class="fas fa-building"></i> Payee Name</label>
+                    <input type="text" id="payee" required placeholder="Who is receiving payment?">
+                </div>
+                
+                <div class="form-group">
+                    <label for="purpose"><i class="fas fa-clipboard-list"></i> Purpose of Payment</label>
+                    <textarea id="purpose" rows="3" required placeholder="Describe what this payment is for"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="date"><i class="fas fa-calendar"></i> Date</label>
+                    <input type="date" id="date" required>
+                </div>
+                
+                <!-- Payment Method Selection -->
+                <div class="form-group">
+                    <label><i class="fas fa-credit-card"></i> Payment Method</label>
+                    <p style="color: #666; font-size: 14px; margin: 5px 0 15px 0;">Choose your preferred payment method:</p>
+                    <div class="payment-methods">
+                        <div class="payment-method selected" data-method="zelle">
+                            <i class="fas fa-university"></i>
+                            <span>Zelle</span>
+                        </div>
+                        <div class="payment-method" data-method="cashapp">
+                            <i class="fas fa-dollar-sign"></i>
+                            <span>Cash App</span>
+                        </div>
+                        <div class="payment-method" data-method="venmo">
+                            <i class="fab fa-vimeo"></i>
+                            <span>Venmo</span>
+                        </div>
+                        <div class="payment-method" data-method="paypal">
+                            <i class="fab fa-paypal"></i>
+                            <span>PayPal</span>
+                        </div>
+                        <div class="payment-method" data-method="moncash">
+                            <i class="fas fa-wallet"></i>
+                            <span>MonCash</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Payment Details -->
+                <div id="paymentDetails">
+                    <!-- Zelle Details (default) -->
+                    <div class="payment-details active" id="zelle-details">
+                        <div class="form-group">
+                            <label for="zelle_email"><span class="color-tag zelle-color"></span> Zelle Email</label>
+                            <input type="email" id="zelle_email" placeholder="email@example.com">
+                        </div>
+                        <div class="form-group">
+                            <label for="zelle_phone"><span class="color-tag zelle-color"></span> Zelle Phone</label>
+                            <input type="tel" id="zelle_phone" placeholder="(123) 456-7890">
+                        </div>
+                    </div>
+                    
+                    <!-- Cash App Details -->
+                    <div class="payment-details" id="cashapp-details">
+                        <div class="form-group">
+                            <label for="cashapp_tag"><span class="color-tag cashapp-color"></span> Cash App $Cashtag</label>
+                            <input type="text" id="cashapp_tag" placeholder="$YourCashtag">
+                        </div>
+                    </div>
+                    
+                    <!-- Venmo Details -->
+                    <div class="payment-details" id="venmo-details">
+                        <div class="form-group">
+                            <label for="venmo_username"><span class="color-tag venmo-color"></span> Venmo Username</label>
+                            <input type="text" id="venmo_username" placeholder="@username">
+                        </div>
+                    </div>
+                    
+                    <!-- PayPal Details -->
+                    <div class="payment-details" id="paypal-details">
+                        <div class="form-group">
+                            <label for="paypal_email"><span class="color-tag paypal-color"></span> PayPal Email</label>
+                            <input type="email" id="paypal_email" placeholder="email@example.com">
+                        </div>
+                    </div>
+                    
+                    <!-- MonCash Details -->
+                    <div class="payment-details" id="moncash-details">
+                        <div class="form-group">
+                            <label for="moncash_phone"><span class="color-tag moncash-color"></span> MonCash Phone Number</label>
+                            <input type="tel" id="moncash_phone" placeholder="(509) XXX-XXXX">
+                        </div>
+                    </div>
+                </div>
+                
+                <button type="submit" class="submit-btn">
+                    <i class="fas fa-link"></i> Generate Invoice Link
+                </button>
+            </form>
+            
+            <div id="result" class="success">
+                <h3 style="margin-bottom: 15px; font-size: 20px;">✅ Invoice Created Successfully!</h3>
+                <p>Share this link with the payer:</p>
+                
+                <div class="invoice-link-container">
+                    <input type="text" id="invoiceLink" class="invoice-link" readonly>
+                    <button onclick="copyLink()" class="copy-btn">
+                        <i class="fas fa-copy"></i> Copy
+                    </button>
+                </div>
+                
+                <a id="viewLink" href="#" target="_blank" class="view-btn">
+                    <i class="fas fa-eye"></i> View Invoice
+                </a>
+            </div>
+        </div>
+        
+        <div class="instructions">
+            <h3><i class="fas fa-info-circle"></i> How it works:</h3>
+            <ol>
+                <li>Fill in the invoice details above</li>
+                <li>Select a payment method (each has its brand color)</li>
+                <li>Enter payment details (email, phone, etc.)</li>
+                <li>Click "Generate Invoice Link"</li>
+                <li>Share the link with the payer</li>
+                <li>Payer reviews and marks as paid</li>
+            </ol>
+            
+            
+        </div>
+    </div>
+    
+    <div class="footer">
+        © 2024 Invoice Pay System | Secure Payment Processing
+    </div>
+    
+    <script>
+        // Hide logo if it doesn't load
+        document.getElementById('companyLogo').onerror = function() {
+            this.style.display = 'none';
+        };
+        
+        // Set today's date as default
+        document.getElementById('date').valueAsDate = new Date();
+        
+        // Payment Method Selection
+        document.querySelectorAll('.payment-method').forEach(method => {
+            method.addEventListener('click', function() {
+                // Remove selected class from all
+                document.querySelectorAll('.payment-method').forEach(m => {
+                    m.classList.remove('selected');
+                });
+                
+                // Add selected class to clicked
+                this.classList.add('selected');
+                
+                // Get selected method
+                const selectedMethod = this.dataset.method;
+                
+                // Hide all payment details
+                document.querySelectorAll('.payment-details').forEach(detail => {
+                    detail.classList.remove('active');
+                });
+                
+                // Show selected payment details
+                document.getElementById(`${selectedMethod}-details`).classList.add('active');
+                
+                // Change submit button color to match selected payment method
+                const submitBtn = document.querySelector('.submit-btn');
+                const colors = {
+                    'zelle': 'linear-gradient(135deg, #6d1e70 0%, #4a148c 100%)',
+                    'cashapp': 'linear-gradient(135deg, #00d632 0%, #00b32a 100%)',
+                    'venmo': 'linear-gradient(135deg, #3d95ce 0%, #0088cc 100%)',
+                    'paypal': 'linear-gradient(135deg, #003087 0%, #009cde 100%)',
+                    'moncash': 'linear-gradient(135deg, #ff0000 0%, #cc0000 100%)'
+                };
+                submitBtn.style.background = colors[selectedMethod];
+            });
+        });
+        
+        // Handle form submission
+        document.getElementById('invoiceForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Get selected payment method
+            const selectedMethod = document.querySelector('.payment-method.selected').dataset.method;
+            
+            const invoiceData = {
+                amount: document.getElementById('amount').value,
+                payer: document.getElementById('payer').value,
+                payee: document.getElementById('payee').value,
+                purpose: document.getElementById('purpose').value,
+                date: document.getElementById('date').value,
+                payment_method: selectedMethod,
+                zelle_email: document.getElementById('zelle_email').value,
+                zelle_phone: document.getElementById('zelle_phone').value,
+                cashapp_tag: document.getElementById('cashapp_tag').value,
+                venmo_username: document.getElementById('venmo_username').value,
+                paypal_email: document.getElementById('paypal_email').value,
+                moncash_phone: document.getElementById('moncash_phone').value
+            };
+            
+            try {
+                const response = await fetch('/create_invoice', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(invoiceData)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    const fullLink = window.location.origin + result.invoice_link;
+                    document.getElementById('invoiceLink').value = fullLink;
+                    document.getElementById('viewLink').href = result.invoice_link;
+                    document.getElementById('result').classList.add('show');
+                    document.getElementById('invoiceForm').reset();
+                    document.getElementById('date').valueAsDate = new Date();
+                    
+                    // Reset payment method to Zelle
+                    document.querySelectorAll('.payment-method').forEach(m => {
+                        m.classList.remove('selected');
+                        if (m.dataset.method === 'zelle') {
+                            m.classList.add('selected');
+                        }
+                    });
+                    
+                    // Reset payment details
+                    document.querySelectorAll('.payment-details').forEach(detail => {
+                        detail.classList.remove('active');
+                    });
+                    document.getElementById('zelle-details').classList.add('active');
+                    
+                    // Reset submit button to Zelle color
+                    document.querySelector('.submit-btn').style.background = 'linear-gradient(135deg, #6d1e70 0%, #4a148c 100%)';
+                    
+                    // Scroll to result
+                    document.getElementById('result').scrollIntoView({ behavior: 'smooth' });
+                }
+            } catch (error) {
+                alert('Error creating invoice. Please try again.');
+            }
+        });
+        
+        function copyLink() {
+            const linkInput = document.getElementById('invoiceLink');
+            linkInput.select();
+            document.execCommand('copy');
+            alert('Link copied to clipboard!');
+        }
+    </script>
+</body>
+</html>
+
+

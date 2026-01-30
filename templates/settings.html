@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - Invoice System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --brand-color: {{ settings.brand_color }};
+            --secondary-color: {{ settings.secondary_color }};
+        }
+    </style>
+</head>
+<body>
+    <div class="settings-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="logo-section">
+                {% if settings.company_logo %}
+                <img src="{{ settings.company_logo }}" alt="{{ settings.company_name }}" class="company-logo">
+                {% endif %}
+                <h2>{{ settings.company_name }}</h2>
+            </div>
+            
+            <nav class="nav-menu">
+                <a href="{{ url_for('dashboard') }}" class="nav-item">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+                <a href="{{ url_for('index') }}" class="nav-item">
+                    <i class="fas fa-plus-circle"></i> Create Invoice
+                </a>
+                <a href="{{ url_for('settings_page') }}" class="nav-item active">
+                    <i class="fas fa-cog"></i> Settings
+                </a>
+            </nav>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <header class="settings-header">
+                <h1><i class="fas fa-cog"></i> Settings</h1>
+                <p>Configure your invoice system</p>
+            </header>
+            
+            <form method="POST" enctype="multipart/form-data" class="settings-form">
+                <!-- Company Information -->
+                <div class="settings-section">
+                    <h3><i class="fas fa-building"></i> Company Information</h3>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="company_name"><i class="fas fa-signature"></i> Company Name</label>
+                            <input type="text" id="company_name" name="company_name" 
+                                   value="{{ settings.company_name }}" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="company_email"><i class="fas fa-envelope"></i> Company Email</label>
+                            <input type="email" id="company_email" name="company_email" 
+                                   value="{{ settings.company_email }}" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="company_phone"><i class="fas fa-phone"></i> Company Phone</label>
+                            <input type="tel" id="company_phone" name="company_phone" 
+                                   value="{{ settings.company_phone }}">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="company_address"><i class="fas fa-map-marker-alt"></i> Company Address</label>
+                            <input type="text" id="company_address" name="company_address" 
+                                   value="{{ settings.company_address }}">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="company_logo"><i class="fas fa-image"></i> Company Logo</label>
+                        <div class="logo-upload">
+                            {% if settings.company_logo %}
+                            <img src="{{ settings.company_logo }}" alt="Current Logo" class="current-logo">
+                            {% endif %}
+                            <input type="file" id="company_logo" name="company_logo" accept="image/*">
+                            <p class="help-text">Upload your company logo (PNG, JPG, SVG)</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Branding -->
+                <div class="settings-section">
+                    <h3><i class="fas fa-palette"></i> Branding</h3>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="brand_color"><i class="fas fa-paint-brush"></i> Primary Color</label>
+                            <input type="color" id="brand_color" name="brand_color" 
+                                   value="{{ settings.brand_color }}">
+                            <span class="color-value">{{ settings.brand_color }}</span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="secondary_color"><i class="fas fa-paint-brush"></i> Secondary Color</label>
+                            <input type="color" id="secondary_color" name="secondary_color" 
+                                   value="{{ settings.secondary_color }}">
+                            <span class="color-value">{{ settings.secondary_color }}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Invoice Settings -->
+                <div class="settings-section">
+                    <h3><i class="fas fa-file-invoice-dollar"></i> Invoice Settings</h3>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="currency"><i class="fas fa-money-bill-wave"></i> Default Currency</label>
+                            <select id="currency" name="currency" required>
+                                {% for code, currency in currencies.items() %}
+                                <option value="{{ code }}" 
+                                        {% if settings.currency == code %}selected{% endif %}>
+                                    {{ currency.symbol }} - {{ currency.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="tax_rate"><i class="fas fa-percentage"></i> Default Tax Rate (%)</label>
+                            <input type="number" id="tax_rate" name="tax_rate" 
+                                   value="{{ settings.tax_rate }}" step="0.01" min="0" max="100">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Email Settings -->
+                <div class="settings-section">
+                    <h3><i class="fas fa-envelope"></i> Email Settings</h3>
+                    <p class="section-description">Configure email notifications for invoices</p>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="email_smtp_server"><i class="fas fa-server"></i> SMTP Server</label>
+                            <input type="text" id="email_smtp_server" name="email_smtp_server" 
+                                   value="{{ settings.email_smtp_server }}" 
+                                   placeholder="smtp.gmail.com">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="email_smtp_port"><i class="fas fa-plug"></i> SMTP Port</label>
+                            <input type="number" id="email_smtp_port" name="email_smtp_port" 
+                                   value="{{ settings.email_smtp_port }}" 
+                                   placeholder="587">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="email_username"><i class="fas fa-user"></i> Email Username</label>
+                            <input type="text" id="email_username" name="email_username" 
+                                   value="{{ settings.email_username }}" 
+                                   placeholder="your-email@gmail.com">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="email_password"><i class="fas fa-key"></i> Email Password</label>
+                            <input type="password" id="email_password" name="email_password" 
+                                   value="{{ settings.email_password }}" 
+                                   placeholder="Your email password or app password">
+                            <p class="help-text">For Gmail, use an App Password (2-factor must be enabled)</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Save Button -->
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Save Settings
+                    </button>
+                    <button type="button" onclick="testEmail()" class="btn btn-secondary">
+                        <i class="fas fa-paper-plane"></i> Test Email
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        // Update color value display
+        document.getElementById('brand_color').addEventListener('input', function(e) {
+            document.querySelector('label[for="brand_color"] .color-value').textContent = e.target.value;
+        });
+        
+        document.getElementById('secondary_color').addEventListener('input', function(e) {
+            document.querySelector('label[for="secondary_color"] .color-value').textContent = e.target.value;
+        });
+        
+        function testEmail() {
+            if (confirm('Send a test email to verify your email settings?')) {
+                fetch('/test_email', {
+                    method: 'POST'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Test email sent successfully! Check your inbox.');
+                    } else {
+                        alert('Error sending test email: ' + data.error);
+                    }
+                });
+            }
+        }
+    </script>
+</body>
+</html>
